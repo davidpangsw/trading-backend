@@ -10,8 +10,8 @@ const {
     checkRoles, ROLES, ADMIN,
     authRoles,
     LIMITER,
-} = require('../../modules/member.js');
-const { sanitizeObjectId } = require('../../modules/util.js');
+} = require('../../middleware/member.js');
+const { sanitizeObjectId } = require('../../middleware/util.js');
 const saltRounds = 10;
 
 const router = express.Router();

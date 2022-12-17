@@ -8,8 +8,8 @@ const { ObjectId } = require('mongodb');
 const { getCollection } = require('../../database.js');
 const bcrypt = require('bcrypt');
 const validator = require('../../middleware/validator.js');
-const { checkUsername, checkPassword, checkStrongPassword, checkRoles, ROLES, authRoles } = require('../../modules/member.js');
-const { sanitizeObjectId } = require('../../modules/util.js');
+const { checkUsername, checkPassword, checkStrongPassword, checkRoles, ROLES, authRoles } = require('../../middleware/member.js');
+const { sanitizeObjectId } = require('../../middleware/util.js');
 
 const router = express.Router();
 

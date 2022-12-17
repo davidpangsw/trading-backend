@@ -1,7 +1,7 @@
 const { ObjectId } = require('mongodb');
 const { checkSchema } = require('express-validator');
 
-const validator = require('../middleware/validator.js');
+const validator = require('./validator.js');
 const checkObjectId = checkSchema({
     id: {
         in: ['params'],

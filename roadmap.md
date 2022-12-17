@@ -1,0 +1,7 @@
+- re-design registration
+    - re-locate the files
+    - unit tests
+- re-design verification
+- re-design stock fetching
+- proper logging (no console.log)
+- design gaming

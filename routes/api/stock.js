@@ -6,14 +6,14 @@
  */
 const express = require('express');
 const validator = require('../../middleware/validator.js');
-const { StockRepository, checkSymbol } = require('../../modules/stock.js');
+const { StockRepository, checkSymbol } = require('../../service/stock.js');
 const {
     checkUsername,
     checkPassword, checkStrongPassword,
     checkRoles, ROLES, ADMIN,
     authRoles,
     LIMITER, createLimiter,
-} = require('../../modules/member.js');
+} = require('../../middleware/member.js');
 
 const repo = new StockRepository();
 const router = express.Router();
