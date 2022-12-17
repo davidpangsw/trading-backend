@@ -1,7 +1,7 @@
-- re-design registration
+- re-design registration (member)
     - re-locate the files
     - unit tests
-- re-design verification
-- re-design stock fetching
+- re-design verification (session)
+- re-design stock fetching (stock)
 - proper logging (no console.log)
-- design gaming
+- design gaming (trading-game)
