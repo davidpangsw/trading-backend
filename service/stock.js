@@ -1,5 +1,6 @@
 const { getCollection } = require('../database.js');
 const { checkSchema } = require('express-validator');
+const { default: logger } = require('../logging.js');
 
 // express-validator middlewares
 const checkSymbol = checkSchema({
@@ -28,7 +29,7 @@ class StockRepository {
     }
 
     conditionToMongoQuery(condition) {
-        // console.log(condition);
+        // logger.debug(condition);
         const mongoQuery = {};
 
         // symbol
@@ -89,11 +90,11 @@ class StockRepository {
     }
 
     async screenStocks(query) {
-        // console.log(query);
+        // logger.debug(query);
 
         // carefully check query and prevent injection
         let limit = this.validateInt(query.limit, 20, [0, 100]);
-        // console.log(limit);
+        // logger.debug(limit);
 
 
         let ret = [];
@@ -110,7 +111,7 @@ class StockRepository {
                     return { success: false, message: message, result: null };
                 }
 
-                // console.log(`limit=${limit}, item=${JSON.stringify(mongoQuery)}`);
+                // logger.debug(`limit=${limit}, item=${JSON.stringify(mongoQuery)}`);
                 const stocks = await getCollection('stocks');
                 const result = await stocks.find(mongoQuery).project({
                     symbol: 1,

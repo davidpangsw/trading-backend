@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt');
 const validator = require('../../middleware/validator.js');
 const { checkUsername, checkPassword, checkStrongPassword, checkRoles, ROLES, authRoles } = require('../../middleware/member.js');
 const { sanitizeObjectId } = require('../../middleware/util.js');
+const { default: logger } = require('../../logging.js');
 
 const router = express.Router();
 
@@ -56,7 +57,7 @@ router.post('/',
             member: member._id,
             createdAt: new Date(),
         });
-        // console.log(result);
+        // logger.debug(result);
         res.cookie('session', {
             id: result.insertedId,
             member: {
@@ -120,7 +121,7 @@ router.delete('/',
         const result = await sessions.deleteOne({ _id: session._id });
         if (result.deletedCount < 1) {
             // warning here in server side
-            console.log(`session ${session._id} for cookie not found!`);
+            logger.warn(`session ${session._id} for cookie not found!`);
         }
         res.json({ message: 'Session deleted' });
     }

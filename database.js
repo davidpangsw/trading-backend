@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const { default: logger } = require('./logging');
 
 let connDB = null;
 
@@ -7,7 +8,7 @@ async function initDB(connStr, database) {
     await client.connect();
     await client.db(database).command({ ping: 1 });
     connDB = client.db(database);
-    console.log("Database Connected successfully");
+    logger.info("Database Connected successfully");
 }
 
 async function getCollection(name) {

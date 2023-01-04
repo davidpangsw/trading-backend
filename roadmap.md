@@ -1,7 +1,10 @@
+- proper logging (no console.log)
+    - npm i winston
+    - npm i winston-daily-rotate-file
+- re-design stock fetching (stock)
+- design gaming (trading-game)
 - re-design registration (member)
+    - research AAA solutions
     - re-locate the files
     - unit tests
 - re-design verification (session)
-- re-design stock fetching (stock)
-- proper logging (no console.log)
-- design gaming (trading-game)

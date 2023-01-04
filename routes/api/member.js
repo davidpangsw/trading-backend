@@ -12,6 +12,7 @@ const {
     LIMITER,
 } = require('../../middleware/member.js');
 const { sanitizeObjectId } = require('../../middleware/util.js');
+const { default: logger } = require('../../logging.js');
 const saltRounds = 10;
 
 const router = express.Router();
@@ -116,7 +117,7 @@ router.get('/:id',
     validator,
     async (req, res) => {
         const _id = req.params.id;
-        // console.log(_id);
+        // logger.debug(_id);
         const members = await getCollection('members');
         const result = await members.findOne({ _id: _id });
         if (result === null) {
@@ -151,7 +152,7 @@ router.put('/:id',
                 },
             },
         );
-        // console.log(_id);
+        // logger.debug(_id);
         if (result.matchedCount > 0) {
             res.status(200).json();
         } else {

@@ -1,7 +1,9 @@
-const logger = (req, res, next) => {
-    // console.log(`${req.method} ${req.protocol} ${req.originalUrl}`);
+const { default: logger } = require("../logging");
 
-    console.log({
+const middleware = (req, res, next) => {
+    // logger.info(`${req.method} ${req.protocol} ${req.originalUrl}`);
+
+    logger.info({
         "method":      req.method,          // "GET"
         "protocol":    req.protocol,        // "http"
         "hostname":    req.hostname,        // "example.com"
@@ -21,4 +23,4 @@ const logger = (req, res, next) => {
     next();
 };
 
-module.exports = logger;
+module.exports = middleware;

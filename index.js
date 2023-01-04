@@ -3,7 +3,7 @@ const cors = require('cors');
 const compression = require("compression");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const logger = require('./middleware/logger');
+const loggerMiddleware = require('./middleware/logger');
 const { initDB } = require('./database');
 
 // init database
@@ -15,7 +15,7 @@ const dbPromise = initDB(CONN_STR, DATABASE); // should wait?
 // const mongoose = require("mongoose");
 // const dev_db_url = "mongodb://localhost:27017/";
 // const mongoDB = process.env.MONGODB_URI || dev_db_url;
-// console.log(`Connect mongoDB=${mongoDB}`);
+// logger.info(`Connect mongoDB=${mongoDB}`);
 // mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 // const db = mongoose.connection;
 // db.on("error", console.error.bind(console, "MongoDB connection error:"));
@@ -46,10 +46,11 @@ app.use(express.urlencoded({ extended: false }));
 //     secure: true
 // }));
 app.use(cookieParser());
-if (process.env.NODE_ENV !== 'production') app.use(logger);
+if (process.env.NODE_ENV !== 'production') app.use(loggerMiddleware);
 
 app.get('/ping', (req, res) => res.json({ 'message': 'pong' }));
 const { authRoles, ADMIN } = require('./modules/member.js');
+const { default: logger } = require('./logging');
 
 
 app.use('/api/members', require('./routes/api/member'));
@@ -58,5 +59,5 @@ app.use('/api/stocks', require('./routes/api/stock'));
 
 const PORT = process.env.PORT || 5000;
 dbPromise.then(() => {
-    app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+    app.listen(PORT, () => logger.info(`Server started on port ${PORT}`));
 });
