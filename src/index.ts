@@ -1,10 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const compression = require("compression");
-const helmet = require("helmet");
-const cookieParser = require("cookie-parser");
-const loggerMiddleware = require('./middleware/logger');
-const { initDB } = require('./database');
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import compression from 'compression';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import loggerMiddleware from './middleware/logger';
+import { initDB } from './database';
+import logger from './logging';
+
+import { authRoles, ADMIN } from './modules/member';
+import memberRoutes from './routes/api/member';
+import sessionRoutes from './routes/api/session';
+import stockRoutes from './routes/api/stock';
 
 // init database
 const CONN_STR = process.env.CONN_STR || 'mongodb://localhost:27017';
@@ -48,16 +54,20 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 if (process.env.NODE_ENV !== 'production') app.use(loggerMiddleware);
 
-app.get('/ping', (req, res) => res.json({ 'message': 'pong' }));
-const { authRoles, ADMIN } = require('./modules/member.js');
-const { default: logger } = require('./logging');
+app.get('/ping', (req: Request, res: Response) => res.json({ 'message': 'pong' }));
 
 
-app.use('/api/members', require('./routes/api/member'));
-app.use('/api/sessions', require('./routes/api/session'));
-app.use('/api/stocks', require('./routes/api/stock'));
+
+// Use routes
+app.use('/api/members', memberRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/stocks', stockRoutes);
 
 const PORT = process.env.PORT || 5000;
+
+// Wait for DB connection, then start server
 dbPromise.then(() => {
     app.listen(PORT, () => logger.info(`Server started on port ${PORT}`));
+}).catch((error) => {
+    logger.error('Failed to connect to the database:', error);
 });

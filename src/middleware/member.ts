@@ -1,11 +1,11 @@
-const rateLimit = require('express-rate-limit');
-const { checkSchema } = require('express-validator');
-const { getCollection } = require('../database.js');
-const { ObjectId } = require('mongodb');
-const { setSession } = require('./session.js');
+import rateLimit from 'express-rate-limit';
+import { checkSchema } from 'express-validator';
+import { getCollection } from '../database';
+import { ObjectId } from 'mongodb';
+import { setSession } from './session';
 
-const ADMIN = 'admin';
-const ROLES = [ADMIN];
+const ADMIN: string = 'admin';
+const ROLES: string[] = [ADMIN];
 
 /**
  * See: param('').isStrongPassword()
@@ -25,8 +25,23 @@ const ROLES = [ADMIN];
  *    pointsForContainingSymbol: 10
  * }
  */
-function getIsStrongPasswordOptions() {
-    const opts = {
+interface StrongPasswordOptions {
+    minLength: number;
+    minLowercase: number;
+    minUppercase: number;
+    minNumbers: number;
+    minSymbols: number;
+    returnScore: boolean;
+    pointsPerUnique: number;
+    pointsPerRepeat: number;
+    pointsForContainingLower: number;
+    pointsForContainingUpper: number;
+    pointsForContainingNumber: number;
+    pointsForContainingSymbol: number;
+}
+
+function getIsStrongPasswordOptions(): { options: StrongPasswordOptions; errorMessage: string } {
+    const opts: StrongPasswordOptions = {
         minLength: 8,
         minLowercase: 1,
         minUppercase: 1,
@@ -38,38 +53,38 @@ function getIsStrongPasswordOptions() {
         pointsForContainingLower: 10,
         pointsForContainingUpper: 10,
         pointsForContainingNumber: 10,
-        pointsForContainingSymbol: 10
+        pointsForContainingSymbol: 10,
     };
+
     const requirements = `
     Length: ${opts.minLength}
     Number of Lowercases: ${opts.minLowercase}
     Number of Uppercases: ${opts.minUppercase}
     Number of Numbers: ${opts.minNumbers}
     Number of Symbols: ${opts.minSymbols}
-    `
+    `;
 
     return {
         options: opts,
-        errorMessage: `You password must be: ${requirements}`,
-    }
+        errorMessage: `Your password must be: ${requirements}`,
+    };
 }
 
-// express-validator middlewares
 const checkUsername = checkSchema({
     username: {
         in: ['body'],
-        // errorMessage: 'Invalid username',
-
-        exists: { errorMessage: 'Missing field' },
-        isAlphanumeric: { errorMessage: 'Invalid username (not alphanumeric)' },
-        isLength: { options: { min: 5, max: 100 }, errorMessage: 'Invalid username (length must be 5 - 100)' },
+        exists: { errorMessage: 'Missing field', },
+        isAlphanumeric: { errorMessage: 'Invalid username (not alphanumeric)', },
+        isLength: {
+            options: { min: 5, max: 100 },
+            errorMessage: 'Invalid username (length must be 5 - 100)',
+        },
     },
 });
 
 const checkStrongPassword = checkSchema({
     password: {
         in: ['body'],
-        // errorMessage: 'Invalid password',
         exists: { errorMessage: 'Missing field' },
         isStrongPassword: getIsStrongPasswordOptions(),
     },
@@ -87,17 +102,33 @@ const checkPassword = checkSchema({
 const checkRoles = checkSchema({
     roles: {
         in: ['body'],
-        // errorMessage: 'Invalid roles',
-
         exists: { errorMessage: 'Missing field' },
         isArray: { errorMessage: 'Invalid roles (not an array)' },
     },
     'roles.*': {
         isString: { errorMessage: 'Invalid role (not string)' },
-        // isIn has a bug, use custom
-        custom: { options: (value) => ROLES.includes(value), errorMessage: 'Invalid role (does not matched any role value)' }
+        // IsIn has a bug, use custom
+        custom: {
+            options: (value: string) => ROLES.includes(value),
+            errorMessage: 'Invalid role (does not match any role value)',
+        },
     },
 });
+
+
+interface Member {
+    _id: string;
+    roles: string[];
+    // Add any other properties a member might have
+}
+
+declare global {
+    namespace Express {
+        interface Request {
+            member?: Member | null;
+        }
+    }
+}
 
 /**
  * Read session
@@ -106,20 +137,19 @@ const checkRoles = checkSchema({
  * @param {Array} roles 
  * @returns 
  */
-const authRoles = (roles) => [
+export const authRoles = (roles: string[]) => [
     setSession,
-    async (req, res, next) => {
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         //
         // Authentication, set req.member if exists
         //
-        let member = null;
+        let member: Member | null = null;
         if (req.session) {
             const session = req.session;
-            const members = await getCollection('members');
+            const members = await getCollection<Member>('members');
             member = await members.findOne({ _id: session.member });
-            if (member === null) { // maybe member deleted while logging in
-                // This is a server side bug?
 
+            if (member === null) { // maybe member deleted while logging in
                 // clear unknown cookie session
                 res.cookie('session', null, {
                     path: '/',
@@ -127,7 +157,7 @@ const authRoles = (roles) => [
                     secure: true, // secure (boolean): Is only accessible through HTTPS?
                 });
 
-                res.status(401).json({ message: 'Please login again (member does not exist for this session)' }); // 401 UNAUTHORIZED (unauthenticated)
+                res.status(401).json({ message: 'Please login again (member does not exist for this session)' });
                 return;
             }
             req.member = member;
@@ -138,7 +168,7 @@ const authRoles = (roles) => [
         //
         if (roles && roles.length > 0) {
             if (!member) {
-                res.status(403).json({ message: 'This feature is not for guest' });  // 403 FORBIDDEN (unauthorized)
+                res.status(403).json({ message: 'This feature is not for guest' });
                 return;
             }
 
@@ -155,27 +185,30 @@ const authRoles = (roles) => [
     },
 ];
 
-const createLimiter = (props) => {
+interface LimiterProps extends Partial<Options> {
+    windowMs?: number;
+    max?: number | ((req: Request, res: Response) => number);
+}
+
+const createLimiter = (props: LimiterProps) => {
     return rateLimit({
-        // windowMs: 1 * 60 * 1000, // milliseconds per window
-        // max: 10, // number of requests per `window`
         message: 'Too many requests, please try again later', // error message
         standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
         legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-        keyGenerator: (req, res) => (req.member) ? req.member._id : req.ip, // member id or ip
+        keyGenerator: (req: Request, res: Response): string => (req.member ? req.member._id : req.ip), // member id or IP
         ...props
     });
-}
+};
 
 const LIMITER = createLimiter({
     windowMs: 1 * 60 * 1000, // milliseconds per window
-    max: (req, res) => {
+    max: (req: Request, res: Response): number => {
         if (!req.member) {
             return 10; // GUEST
         }
 
         if (req.member.roles.includes(ADMIN)) {
-            return 0; // unlimited
+            return 0; // unlimited for admin
         } else {
             return 30; // normal user
         }

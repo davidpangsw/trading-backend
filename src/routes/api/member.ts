@@ -1,34 +1,38 @@
-const express = require('express');
-const { param, checkSchema } = require('express-validator');
-const bcrypt = require('bcrypt');
+import express, { Request, Response } from 'express';
+import { param, checkSchema } from 'express-validator';
+import bcrypt from 'bcrypt';
 
-const { getCollection } = require('../../database.js');
-const validator = require('../../middleware/validator.js');
-const {
+import { getCollection } from '../../database';
+import validator from '../../middleware/validator';
+import {
     checkUsername,
-    checkPassword, checkStrongPassword,
-    checkRoles, ROLES, ADMIN,
+    checkPassword,
+    checkStrongPassword,
+    checkRoles,
+    ROLES,
+    ADMIN,
     authRoles,
     LIMITER,
-} = require('../../middleware/member.js');
-const { sanitizeObjectId } = require('../../middleware/util.js');
-const { default: logger } = require('../../logging.js');
-const saltRounds = 10;
+} from '../../middleware/member';
+import { sanitizeObjectId } from '../../middleware/util';
+import logger from '../../logging';
 
+const saltRounds = 10;
 const router = express.Router();
 
-async function hashPassword(password) {
+async function hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(saltRounds);
     const result = await bcrypt.hash(password, salt);
     return result;
 }
 
-router.post('/',
+router.post(
+    '/',
     checkUsername,
     checkStrongPassword,
     // LIMITER, // no limiter for registering
     validator,
-    async (req, res) => {
+    async (req: Request, res: Response) => {
         const members = await getCollection('members');
         const username = req.body.username;
         const password = await hashPassword(req.body.password);
@@ -53,11 +57,12 @@ router.post('/',
     }
 );
 
-router.delete('/:id',
+router.delete(
+    '/:id',
     authRoles(ADMIN),
     sanitizeObjectId,
     validator,
-    async (req, res) => {
+    async (req: Request, res: Response) => {
         const _id = req.params.id;
 
         const members = await getCollection('members');
@@ -75,27 +80,29 @@ router.delete('/:id',
     }
 );
 
-router.get('/roles',
+router.get(
+    '/roles',
     authRoles(ADMIN),
-    async (req, res) => {
+    async (req: Request, res: Response) => {
         res.json({
             roles: ROLES,
         });
     }
-)
+);
 
-router.get('/',
+router.get(
+    '/',
     authRoles(ADMIN),
     checkSchema({
         username: {
             in: ['params'],
-        }
+        },
     }),
     validator,
-    async (req, res) => {
-        const username = req.query.username;
+    async (req: Request, res: Response) => {
+        const username = req.query.username as string;
         const members = await getCollection('members');
-        let result = await members.findOne({ username: username });
+        const result = await members.findOne({ username: username });
 
         if (result === null) {
             res.status(404).json({ message: 'member not found' }); // 404 not found
@@ -111,13 +118,13 @@ router.get('/',
     }
 );
 
-router.get('/:id',
+router.get(
+    '/:id',
     authRoles(ADMIN),
     sanitizeObjectId,
     validator,
-    async (req, res) => {
+    async (req: Request, res: Response) => {
         const _id = req.params.id;
-        // logger.debug(_id);
         const members = await getCollection('members');
         const result = await members.findOne({ _id: _id });
         if (result === null) {
@@ -134,12 +141,13 @@ router.get('/:id',
     }
 );
 
-router.put('/:id',
+router.put(
+    '/:id',
     authRoles(ADMIN),
     sanitizeObjectId,
     checkRoles,
     validator,
-    async (req, res) => {
+    async (req: Request, res: Response) => {
         const _id = req.params.id;
         const roles = req.body.roles;
         const members = await getCollection('members');
@@ -150,9 +158,8 @@ router.put('/:id',
                 $set: {
                     roles: roles,
                 },
-            },
+            }
         );
-        // logger.debug(_id);
         if (result.matchedCount > 0) {
             res.status(200).json();
         } else {
@@ -161,4 +168,4 @@ router.put('/:id',
     }
 );
 
-module.exports = router;
+export default router;

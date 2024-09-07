@@ -1,8 +1,18 @@
-const { getCollection } = require('../database.js');
-const { checkSchema } = require('express-validator');
-const { default: logger } = require('../logging.js');
+import { checkSchema } from 'express-validator';
+import { getCollection } from '../database';
+import logger from '../logging';
 
-// express-validator middlewares
+// Define the shape of Stock documents in MongoDB
+interface Stock {
+    symbol: string;
+    shortName: string;
+    sector?: string;
+    exchange?: string;
+    country?: string;
+    marketCap?: number;
+}
+
+// express-validator middleware
 const checkSymbol = checkSchema({
     symbol: {
         in: ['query'],
@@ -11,18 +21,18 @@ const checkSymbol = checkSchema({
         isString: { errorMessage: 'Not a string' },
         isLength: { options: { min: 1, max: 100 }, errorMessage: 'Invalid symbol (length must be 1 - 100)' },
     },
-})
+});
 
 class StockRepository {
-    constructor() {
-    }
+    constructor() {}
 
-    validateInt(value, defaultValue, range) {
-        value = parseInt(value);
-        if (isNaN(value) || !isFinite(value)) return defaultValue;
-        let res = Number(value);
+    validateInt(value: string | undefined, defaultValue: number, range?: [number, number]): number {
+        const parsedValue = parseInt(value ?? '', 10);
+        if (isNaN(parsedValue) || !isFinite(parsedValue)) return defaultValue;
+
+        let res = Number(parsedValue);
         if (range !== undefined) {
-            let [fromInc, toInc] = range;
+            const [fromInc, toInc] = range;
             if (res < fromInc || res > toInc) return defaultValue;
         }
         return res;
@@ -30,7 +40,7 @@ class StockRepository {
 
     conditionToMongoQuery(condition) {
         // logger.debug(condition);
-        const mongoQuery = {};
+        const mongoQuery: any = {};
 
         // symbol
         if (condition.symbol) {
@@ -89,21 +99,21 @@ class StockRepository {
         return { success: true, message: null, query: mongoQuery }
     }
 
-    async screenStocks(query) {
+    async screenStocks(query: any) {
         // logger.debug(query);
 
         // carefully check query and prevent injection
         let limit = this.validateInt(query.limit, 20, [0, 100]);
         // logger.debug(limit);
 
-
-        let ret = [];
+        let ret: Stock[] = [];
         if (query.conditions) {
             let conditions = query.conditions;
             if (conditions.length === 0) {
                 conditions = [{}];
             }
-            let symbolToStock = {};
+
+            let symbolToStock: { [key: string]: Stock } = {};
             for (let i = 0; i < conditions.length; i++) {
                 const condition = conditions[i];
                 const { success, message, query: mongoQuery } = this.conditionToMongoQuery(condition);
@@ -112,7 +122,7 @@ class StockRepository {
                 }
 
                 // logger.debug(`limit=${limit}, item=${JSON.stringify(mongoQuery)}`);
-                const stocks = await getCollection('stocks');
+                const stocks = await getCollection<Stock>('stocks');
                 const result = await stocks.find(mongoQuery).project({
                     symbol: 1,
                     shortName: 1,
@@ -143,42 +153,34 @@ class StockRepository {
     }
 
     async getStockBySymbol(symbol) {
-        const stocks = await getCollection('stocks');
-
-        const result = await stocks.findOne({ symbol: symbol });
-        return { success: true, message: 'Success', result: result };
+        const stocks = await getCollection<Stock>('stocks');
+        const result = await stocks.findOne({ symbol });
+        return { success: true, message: 'Success', result };
     }
 
     async getSectors() {
-        const stocks = await getCollection('stocks');
-
+        const stocks = await getCollection<Stock>('stocks');
         const result = await stocks.distinct("sector");
-        return { success: true, message: 'Success', result: result };
+        return { success: true, message: 'Success', result };
     }
 
     async getExchanges() {
-        const stocks = await getCollection('stocks');
-
+        const stocks = await getCollection<Stock>('stocks');
         const result = await stocks.distinct("exchange");
-        return { success: true, message: 'Success', result: result };
+        return { success: true, message: 'Success', result };
     }
 
     async getCountries() {
-        const stocks = await getCollection('stocks');
-
+        const stocks = await getCollection<Stock>('stocks');
         const result = await stocks.distinct("country");
-        return { success: true, message: 'Success', result: result };
+        return { success: true, message: 'Success', result };
     }
 
     async getStock(_id) {
-        const stocks = await getCollection('stocks');
-
+        const stocks = await getCollection<Stock>('stocks');
         const result = await stocks.findOne({ _id: _id });
-        return { success: true, message: 'Success', result: result }
+        return { success: true, message: 'Success', result }
     }
 }
 
-module.exports = {
-    StockRepository,
-    checkSymbol,
-}
+export { StockRepository, checkSymbol };
