@@ -7,7 +7,7 @@ const logger = require('./middleware/logger');
 const { initDB } = require('./database');
 
 // init database
-const CONN_STR = process.env.CONN_STR || 'mongodb://localhost:5432';
+const CONN_STR = process.env.CONN_STR || 'mongodb://localhost:27017';
 const DATABASE = process.env.DATABASE || 'stockdb';
 const dbPromise = initDB(CONN_STR, DATABASE); // should wait?
 
@@ -49,14 +49,14 @@ app.use(cookieParser());
 if (process.env.NODE_ENV !== 'production') app.use(logger);
 
 app.get('/ping', (req, res) => res.json({ 'message': 'pong' }));
-const { authRoles, ADMIN } = require('./modules/member.js');
+// const { authRoles, ADMIN } = require('./middleware/member.js');
 
 
 app.use('/api/members', require('./routes/api/member'));
 app.use('/api/sessions', require('./routes/api/session'));
 app.use('/api/stocks', require('./routes/api/stock'));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 dbPromise.then(() => {
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 });
