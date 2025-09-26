@@ -4,4 +4,5 @@
 - re-design verification (session)
 - re-design stock fetching (stock)
 - proper logging (no console.log)
+- deploy to AWS
 - design gaming (trading-game)

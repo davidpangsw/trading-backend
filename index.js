@@ -7,8 +7,8 @@ const logger = require('./middleware/logger');
 const { initDB } = require('./database');
 
 // init database
-const CONN_STR = process.env.CONN_STR || 'mongodb://localhost:27017';
-const DATABASE = process.env.DATABASE || 'tradingBackendDB';
+const CONN_STR = process.env.CONN_STR || 'mongodb://localhost:5432';
+const DATABASE = process.env.DATABASE || 'stockdb';
 const dbPromise = initDB(CONN_STR, DATABASE); // should wait?
 
 // // Set up mongoose connection
