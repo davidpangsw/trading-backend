@@ -60,3 +60,5 @@ const PORT = process.env.PORT || 3000;
 dbPromise.then(() => {
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 });
+
+module.exports = app;
